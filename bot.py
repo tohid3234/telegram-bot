@@ -21,7 +21,13 @@ TARGET_BOT_ID = 8024943840  # <-- اینجا آی‌دی ربات رو بذار
 FILTERED_WORDS = [
     "میو",
     "ماهی",
-    "spam"
+    "پیشی"
+    "میوهام"
+    "میوهاش"
+    "معو"
+    "انتقال میویی"
+    
+
 ]
 
 # ---------------------
@@ -76,7 +82,7 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # اگر باید حذف شود
     if should_delete:
         asyncio.create_task(
-            delete_after_delay(update.message, 20)
+            delete_after_delay(update.message, 60)
         )
 
 # ---------------------

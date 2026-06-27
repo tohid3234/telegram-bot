@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -12,8 +13,10 @@ from telegram.ext import (
 # تنظیمات
 # ---------------------
 
-import os
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# فقط ID رباتی که می‌خوای حذف بشه
+TARGET_BOT_ID = 8024943840  # <-- اینجا آی‌دی ربات رو بذار
 
 FILTERED_WORDS = [
     "میو",
@@ -31,7 +34,7 @@ logging.basicConfig(
 )
 
 # ---------------------
-# حذف پیام
+# حذف پیام با تأخیر
 # ---------------------
 
 async def delete_after_delay(message, seconds: int):
@@ -42,31 +45,38 @@ async def delete_after_delay(message, seconds: int):
         print("🗑 پیام حذف شد")
 
     except Exception as e:
-        print("خطا در حذف:", e)
+        print("❌ خطا در حذف:", e)
 
 # ---------------------
-# بررسی پیام
+# بررسی پیام‌ها
 # ---------------------
 
 async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    if not update.message or not update.message.text:
+    if not update.message:
         return
 
-    text = update.message.text.lower()
+    text = (update.message.text or "").lower()
+    user = update.message.from_user
 
     print("🔥 MESSAGE:", text)
 
-    # اگر کلمه فیلتر شده بود
+    should_delete = False
+
+    # 1) پیام از ربات خاص
+    if user and user.is_bot and user.id == TARGET_BOT_ID:
+        print("🤖 پیام از ربات هدف شناسایی شد")
+        should_delete = True
+
+    # 2) پیام دارای کلمات فیلتر شده
     if any(word in text for word in FILTERED_WORDS):
+        print("🚨 کلمه فیلتر شده پیدا شد")
+        should_delete = True
 
-        print("🚨 FILTERED WORD DETECTED")
-
+    # اگر باید حذف شود
+    if should_delete:
         asyncio.create_task(
-            delete_after_delay(
-                update.message,
-                20  # زمان حذف (ثانیه)
-            )
+            delete_after_delay(update.message, 20)
         )
 
 # ---------------------
@@ -74,7 +84,6 @@ async def check_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---------------------
 
 def main():
-
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(
@@ -82,9 +91,7 @@ def main():
     )
 
     print("🤖 BOT STARTED")
-
     app.run_polling(drop_pending_updates=True)
-
 
 if __name__ == "__main__":
     main()
